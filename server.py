@@ -92,7 +92,10 @@ def hook_receive():
     owner = data["repository"]["owner"]["login"]
     repo_name = data["repository"]["name"]
     full_name = data["repository"]["full_name"]
-    if not owner or not repo_name or full_name in config["banned-repos"]:
+    if not owner or not repo_name:
+        print(f"Missing owner/repo_name: {owner}/{repo_name}", file=sys.stderr)
+    if full_name in config["banned-repos"]:
+        print(f"Request from banned repository: {full_name}", file=sys.stderr)
         return "ok"
     git_connection = Github(
         login_or_token=git.get_access_token(
@@ -115,6 +118,7 @@ def hook_receive():
 
     diff = repo.compare(before, after)
     maps_changed = list(filter(lambda file: file.status == "modified" and file.filename.endswith(".dmm"), diff.files))
+    print(f"Created check run {check_run_id} from {before} to {after} ({maps_changed} maps changed)", file=sys.stderr)
 
     result_text = "## Maps Changed\n\n" if len(maps_changed) > 0 else "No maps changed"
 
@@ -139,7 +143,7 @@ def hook_receive():
             result_text += f"Download: [diff]({host}{dmm_url}/{file_name_safe})\n"
             try:
                 diff_dmm.to_file(out_file_path)
-                print(f"Writing diff: {out_file_path}")
+                print(f"Writing diff: {out_file_path}", file=sys.stderr)
             except:
                 print(f"WARNING: Encountered error for check {check_run_id} while writing to file: {out_file_path}", file=sys.stderr)
                 check_run_object.edit(
@@ -190,6 +194,7 @@ def get_iso_time():
 
 def validate_signature(payload, secret):
     if not 'X-Hub-Signature' in payload.headers:
+        print(f"No signature detected, ignoring request", file=sys.stderr)
         return False
     signature_header = payload.headers['X-Hub-Signature']
     sha_name, github_signature = signature_header.split('=')

@@ -50,10 +50,11 @@ Add the following permissions:
 
 - Checks: Read and write
 - Contents: Read-only
+- Pull requests: Read-only
 
 Create a webhook redirecting to `webhook-url` on your server, with the following event subscriptions:
 
-- Check run
+- Pull request
 
 Create a client secret, add it to the configuration `app-key`.
 

@@ -118,7 +118,7 @@ def hook_receive():
     commit_head_sha = pull_request["head"]["sha"]
     before = commit_head_sha
     after = pull_request["base"]["sha"]
-    unique_id = re.sub(r'[^\w]', '-', full_name + "-" + pull_request["id"] + "-" + before + "-" + after)
+    unique_id = re.sub(r'[^\w]', '-', full_name + "-" + str(pull_request["id"]) + "-" + before + "-" + after)
 
     repo = git_connection.get_repo(full_name)
     check_run_object = repo.create_check_run(

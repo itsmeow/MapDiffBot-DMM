@@ -116,8 +116,8 @@ def hook_receive():
 
     pull_request = data["pull_request"]
     commit_head_sha = pull_request["head"]["sha"]
-    before = commit_head_sha
-    after = pull_request["base"]["sha"]
+    before = pull_request["base"]["sha"]
+    after = commit_head_sha
     unique_id = re.sub(r'[^\w]', '-', full_name + "-" + str(pull_request["id"]) + "-" + before + "-" + after)
 
     repo = git_connection.get_repo(full_name)
@@ -142,7 +142,7 @@ def hook_receive():
     started_at=get_iso_time())
 
     diff = repo.compare(before, after)
-    maps_changed = list(filter(lambda file: file.status == "modified" and file.filename.endswith(".dmm"), diff["files"]))
+    maps_changed = list(filter(lambda file: file.status == "modified" and file.filename.endswith(".dmm"), diff.files))
     print(f"Created check run {unique_id} ({maps_changed} maps changed)", file=sys.stderr)
 
     result_text = "## Maps Changed\n\n" if len(maps_changed) > 0 else "No maps changed"

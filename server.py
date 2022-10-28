@@ -258,13 +258,16 @@ def get_dmm(filename):
 # Helpers
 # --------
 
+download_sem = asyncio.Semaphore(3)
+
 async def get_file(url, token):
     async with aiohttp.ClientSession() as session:
-        async with session.get(url, headers={"Accept": "application/vnd.github.3.raw", "Authorization": f"Bearer {token}"}) as resp:
-            if resp.status != 200:
-                print(f"error response {resp.status} for {url}", file=sys.stderr)
-                pass
-            return await resp.text()
+        async with download_sem:
+            async with session.get(url, headers={"Accept": "application/vnd.github.3.raw", "Authorization": f"Bearer {token}"}) as resp:
+                if resp.status != 200:
+                    print(f"error response {resp.status} for {url}", file=sys.stderr)
+                    pass
+                return await resp.text()
 
 def get_iso_time():
     return datetime.utcnow().replace(microsecond=0)

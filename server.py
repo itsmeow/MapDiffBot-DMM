@@ -156,7 +156,7 @@ def hook_receive():
         after_dmm = None
         try:
             before_data = requests.get(f"https://api.github.com/repos/{full_name}/contents/{file.filename}?ref={before}", headers={"Accept": "application/vnd.github.3.raw"}).text
-            after_data = requests.get(f"https://api.github.com/repos/{full_name}/contents/{file.filename}?ref={before}", headers={"Accept": "application/vnd.github.3.raw"}).text
+            after_data = requests.get(f"https://api.github.com/repos/{full_name}/contents/{file.filename}?ref={after}", headers={"Accept": "application/vnd.github.3.raw"}).text
             before_dmm = _parse(before_data)
             after_dmm = _parse(after_data)
         except:

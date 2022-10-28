@@ -160,8 +160,8 @@ async def do_request(data, owner, repo_name, full_name):
 
     download_tasks = []
     for file in maps_changed:
-        download_tasks.append(asyncio.ensure_future(aiohttp.request("GET", f"https://api.github.com/repos/{full_name}/contents/{file.filename}?ref={before}", headers={"Accept": "application/vnd.github.3.raw", "Authorization": f"Bearer {token}"})))
-        download_tasks.append(asyncio.ensure_future(aiohttp.request("GET", f"https://api.github.com/repos/{full_name}/contents/{file.filename}?ref={after}", headers={"Accept": "application/vnd.github.3.raw", "Authorization": f"Bearer {token}"})))
+        download_tasks.append(asyncio.ensure_future(async_req(f"https://api.github.com/repos/{full_name}/contents/{file.filename}?ref={before}", token)))
+        download_tasks.append(asyncio.ensure_future(async_req("GET", f"https://api.github.com/repos/{full_name}/contents/{file.filename}?ref={after}", token)))
     downloads = []
     try:
         print(f"Downloading {unique_id}", file=sys.stderr)
@@ -257,6 +257,13 @@ def get_dmm(filename):
 
 # Helpers
 # --------
+
+async def async_req(url, token):
+    async with aiohttp.ClientSession() as session:
+        async with aiohttp.get(urk, headers={"Accept": "application/vnd.github.3.raw", "Authorization": f"Bearer {token}"}) as resp:
+            if resp.status != 200:
+                pass
+            return await resp.text()
 
 async def gather_with_concurrency(n, *coros):
     semaphore = asyncio.Semaphore(n)

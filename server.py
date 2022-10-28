@@ -148,8 +148,8 @@ def hook_receive():
     result_text = "## Maps Changed\n\n" if len(maps_changed) > 0 else "No maps changed"
 
     for file in maps_changed:
-        before_data = repo.get_contents(file.filename, ref=before).decoded_content
-        after_data = repo.get_contents(file.filename, ref=after).decoded_content
+        before_data = repo.get_contents(file.filename, ref=before).decoded_content.decode("utf-8")
+        after_data = repo.get_contents(file.filename, ref=after).decoded_content/decode("utf-8")
         before_dmm = _parse(before_data)
         after_dmm = _parse(after_data)
         try:

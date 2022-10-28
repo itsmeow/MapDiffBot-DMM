@@ -110,10 +110,11 @@ def hook_receive():
     if full_name in config["banned-repos"]:
         print(f"Request from banned repository: {full_name}", file=sys.stderr)
         return "ok"
-    git_connection = Github(
-        login_or_token=git.get_access_token(
+    token = git.get_access_token(
             git.get_installation(owner, repo_name).id
         ).token
+    git_connection = Github(
+        login_or_token=token
     )
 
     pull_request = data["pull_request"]
@@ -155,12 +156,12 @@ def hook_receive():
         before_dmm = None
         after_dmm = None
         try:
-            before_data = requests.get(f"https://api.github.com/repos/{full_name}/contents/{file.filename}?ref={before}", headers={"Accept": "application/vnd.github.3.raw"}).text
-            after_data = requests.get(f"https://api.github.com/repos/{full_name}/contents/{file.filename}?ref={after}", headers={"Accept": "application/vnd.github.3.raw"}).text
+            before_data = requests.get(f"https://api.github.com/repos/{full_name}/contents/{file.filename}?ref={before}", headers={"Accept": "application/vnd.github.3.raw", "Authorization": f"Bearer {token}"}).text
+            after_data = requests.get(f"https://api.github.com/repos/{full_name}/contents/{file.filename}?ref={after}", headers={"Accept": "application/vnd.github.3.raw", "Authorization": f"Bearer {token}"}).text
             before_dmm = _parse(before_data)
             after_dmm = _parse(after_data)
         except Exception as e:
-            print(e)
+            print(str(e))
             print(f"Skipping map file {file.filename} due to error parsing data")
             result_text += f"### {file.filename}\n\n"
             result_text += f"Skipped due to error parsing data\n\n"

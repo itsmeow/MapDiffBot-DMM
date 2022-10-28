@@ -1,7 +1,7 @@
 {
   "name": "MapDiffBot-DMM",
   "app-id": "YOUR APP ID HERE",
-  "app-key": "YOUR APP CLIENT SECRET HERE",
+  "app-key-path": "private_key.pem",
   "host": "https://YOUR APP URL HERE",
   "dmm-url": "/map-diff",
   "webhook-path": "/webhook",

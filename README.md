@@ -18,7 +18,7 @@ python -m MapDiffBot-DMM.diff old.dmm new.dmm diff.dmm
 
 `app-id`: The App ID of your Github app. Listed under "About"
 
-`app-key`: This is the client secret of your app. Generate one and then paste it.
+`app-key-path`: This is the path to the file containing the private key for your app. Generate one and then put it in the repo folder.
 
 `host`: Base URL to direct map downloads to (if `host-dmms` is enabled, it should point to this server).
 

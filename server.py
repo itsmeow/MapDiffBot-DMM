@@ -74,10 +74,19 @@ if not webhook_path or len(webhook_path) == 0:
 # App
 # -----------
 
+app_key = None
+
+try:
+    with open(config["app-key-path"]) as key:
+        app_key = key.read()
+except:
+    print("Error reading app key!", file=sys.stderr)
+    exit(1)
+
 app = Flask(__name__)
 git = GithubIntegration(
     config["app-id"],
-    config["app-key"],
+    app_key,
 )
 
 @app.route(webhook_path, methods=["POST"])
@@ -86,7 +95,7 @@ def hook_receive():
         if not validate_signature(request, config["webhook-secret"]):
             return "invalid signature"
     data = request.json
-    if not "action" in data.keys() or not "check_run" in data.keys() or not data["action"] in ["requested", "rerequested", "created"]:
+    if not "action" in data.keys() or not "pull_request" in data.keys() or not data["action"] in ["opened", "synchronize"]:
         print(f"Invalid action or schema: {data['action']} {data.keys()}", file=sys.stderr)
         return "ok"
 
@@ -105,11 +114,11 @@ def hook_receive():
         ).token
     )
 
-    check = data["check_run"]
-    check_run_id = check["id"]
-    commit_head_sha = check["head_sha"]
-    before = check["check_suite"]["before"]
-    after = check["check_suite"]["after"]
+    pull_request = data["pull_request"]
+    commit_head_sha = pull_request["head"]["sha"]
+    before = commit_head_sha
+    after = pull_request["base"]["sha"]
+    unique_id = re.sub(r'[^\w]', '-', full_name + "-" + pull_request["id"] + "-" + before + "-" + after)
 
     repo = git_connection.get_repo(full_name)
     check_run_object = repo.create_check_run(
@@ -120,7 +129,7 @@ def hook_receive():
 
     diff = repo.compare(before, after)
     maps_changed = list(filter(lambda file: file.status == "modified" and file.filename.endswith(".dmm"), diff.files))
-    print(f"Created check run {check_run_id} from {before} to {after} ({maps_changed} maps changed)", file=sys.stderr)
+    print(f"Created check run {unique_id} from {before} to {after} ({maps_changed} maps changed)", file=sys.stderr)
 
     result_text = "## Maps Changed\n\n" if len(maps_changed) > 0 else "No maps changed"
 
@@ -140,14 +149,14 @@ def hook_receive():
             result_text += f"{movables_added} movables added, {movables_deleted} movables deleted\n"
             result_text += f"{turfs_changed} turfs changed\n"
             result_text += f"{areas_changed} areas changed\n"
-            file_name_safe = re.sub(r'[^\w]', '_', full_name + "-" + str(check_run_id)) + ".dmm"
+            file_name_safe = unique_id + ".dmm"
             out_file_path = dmm_save_path + file_name_safe
             result_text += f"Download: [diff]({host}{dmm_url}/{file_name_safe})\n"
             try:
                 diff_dmm.to_file(out_file_path)
                 print(f"Writing diff: {out_file_path}", file=sys.stderr)
             except:
-                print(f"WARNING: Encountered error for check {check_run_id} while writing to file: {out_file_path}", file=sys.stderr)
+                print(f"WARNING: Encountered error for check {unique_id} while writing to file: {out_file_path}", file=sys.stderr)
                 check_run_object.edit(
                 completed_at=get_iso_time(),
                 conclusion="failure",
@@ -158,7 +167,7 @@ def hook_receive():
                 )
                 return "ok"
         except:
-            print(f"WARNING: Encountered error for check {check_run_id} while performing diff", file=sys.stderr)
+            print(f"WARNING: Encountered error for check {unique_id} while performing diff", file=sys.stderr)
             check_run_object.edit(
             completed_at=get_iso_time(),
             conclusion="failure",

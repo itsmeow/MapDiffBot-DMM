@@ -10,13 +10,16 @@ from .diff import create_diff
 from flask import Flask, request, send_from_directory
 from github import Github, GithubIntegration
 
+import pathlib
+config_path = pathlib.Path(__file__).parent.resolve()
+
 # Parse config
 # --------------
 
 config = {}
 
 try:
-    f = open("config.json")
+    f = open(os.path.join(config_path, "config.json"))
     config = json.load(f)
     f.close()
 except:

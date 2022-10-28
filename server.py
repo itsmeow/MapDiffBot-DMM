@@ -5,8 +5,8 @@ import re
 import json
 import hmac
 import hashlib
-import aiohttp
-from threading import Thread
+import requests
+import concurrent
 from datetime import datetime
 from .dmm import _parse
 from .diff import create_diff
@@ -158,26 +158,33 @@ async def do_request(data, owner, repo_name, full_name):
 
     result_text = "## Maps Changed\n\n" if len(maps_changed) > 0 else "No maps changed"
 
-    download_tasks = []
-    for file in maps_changed:
-        download_tasks.append(asyncio.ensure_future(async_req(f"https://api.github.com/repos/{full_name}/contents/{file.filename}?ref={before}", token)))
-        download_tasks.append(asyncio.ensure_future(async_req(f"https://api.github.com/repos/{full_name}/contents/{file.filename}?ref={after}", token)))
+
     downloads = []
-    try:
-        print(f"Downloading {unique_id}", file=sys.stderr)
-        downloads = await gather_with_concurrency(3, *download_tasks)
-    except Exception as e:
-        print(e)
-        print(f"WARNING: Encountered error for check {unique_id} while performing data download", file=sys.stderr)
-        check_run_object.edit(
-        completed_at=get_iso_time(),
-        conclusion="skipped",
-        output={
-            "title": name,
-            "summary": f"error encountered while performing data download"
-        }
-        )
-        return
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
+        download_tasks = []
+        for file in maps_changed:
+            b = executor.submit(get_file, f"https://api.github.com/repos/{full_name}/contents/{file.filename}?ref={before}", token)
+            a = executor.submit(get_file, f"https://api.github.com/repos/{full_name}/contents/{file.filename}?ref={after}", token)
+            download_tasks.append(b)
+            download_tasks.append(a)
+        for future in concurrent.futures.as_completed(download_tasks):
+            try:
+                print(f"Downloading {unique_id}", file=sys.stderr)
+                downloads.append(future.result())
+            except Exception as e:
+                print(e)
+                print(f"WARNING: Encountered error for check {unique_id} while performing data download", file=sys.stderr)
+                check_run_object.edit(
+                completed_at=get_iso_time(),
+                conclusion="skipped",
+                output={
+                    "title": name,
+                    "summary": f"error encountered while performing data download"
+                }
+                )
+                return
+
     print(f"Parsing {unique_id}", file=sys.stderr)
     diff_tasks = []
     i = 0
@@ -258,20 +265,8 @@ def get_dmm(filename):
 # Helpers
 # --------
 
-async def async_req(url, token):
-    async with aiohttp.ClientSession() as session:
-        async with aiohttp.get(url, headers={"Accept": "application/vnd.github.3.raw", "Authorization": f"Bearer {token}"}) as resp:
-            if resp.status != 200:
-                pass
-            return await resp.text()
-
-async def gather_with_concurrency(n, *coros):
-    semaphore = asyncio.Semaphore(n)
-
-    async def sem_coro(coro):
-        async with semaphore:
-            return await coro
-    return await asyncio.gather(*(sem_coro(c) for c in coros))
+async def get_file(url, token):
+    return requests.get(url, headers={"Accept": "application/vnd.github.3.raw", "Authorization": f"Bearer {token}"}).text
 
 def get_iso_time():
     return datetime.utcnow().replace(microsecond=0)

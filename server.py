@@ -5,7 +5,7 @@ import re
 import json
 import hmac
 import hashlib
-import requests
+import aiohttp
 from threading import Thread
 from datetime import datetime
 from .dmm import _parse
@@ -111,6 +111,7 @@ async def hook_receive():
     if full_name in config["banned-repos"]:
         print(f"Request from banned repository: {full_name}", file=sys.stderr)
         return "banned repository", 403
+
     asyncio.get_running_loop().create_task(do_request(data, owner, repo_name, full_name))
     return "ok"
 
@@ -157,8 +158,8 @@ async def do_request(data, owner, repo_name, full_name):
 
     download_tasks = []
     for file in maps_changed:
-        download_tasks.append(asyncio.create_task(requests.get(f"https://api.github.com/repos/{full_name}/contents/{file.filename}?ref={before}", headers={"Accept": "application/vnd.github.3.raw", "Authorization": f"Bearer {token}"}).text))
-        download_tasks.append(asyncio.create_task(requests.get(f"https://api.github.com/repos/{full_name}/contents/{file.filename}?ref={after}", headers={"Accept": "application/vnd.github.3.raw", "Authorization": f"Bearer {token}"}).text))
+        download_tasks.append(asyncio.ensure_future(aiohttp.request("GET", f"https://api.github.com/repos/{full_name}/contents/{file.filename}?ref={before}", headers={"Accept": "application/vnd.github.3.raw", "Authorization": f"Bearer {token}"}).text))
+        download_tasks.append(asyncio.ensure_future(aiohttp.request("GET", f"https://api.github.com/repos/{full_name}/contents/{file.filename}?ref={after}", headers={"Accept": "application/vnd.github.3.raw", "Authorization": f"Bearer {token}"}).text))
     downloads = []
     try:
         downloads = await asyncio.gather(*download_tasks)
@@ -179,7 +180,7 @@ async def do_request(data, owner, repo_name, full_name):
         file = maps_changed[i // 2]
         before_dmm = _parse(downloads[i])
         after_dmm = _parse(downloads[i + 1])
-        diff_tasks.append(asyncio.create_task(create_diff(before_dmm, after_dmm)))
+        diff_tasks.append(asyncio.ensure_future(create_diff(before_dmm, after_dmm)))
         i += 2
     diffs = []
     try:

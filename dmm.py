@@ -5,6 +5,7 @@
 import io
 import bidict
 import random
+import aiofiles
 from collections import namedtuple
 
 TGM_HEADER = "//MAP CONVERTED BY dmm2tgm.py THIS HEADER COMMENT PREVENTS RECONVERSION, DO NOT REMOVE"
@@ -31,9 +32,9 @@ class DMM:
     def from_bytes(bytes):
         return _parse(bytes.decode(ENCODING))
 
-    def to_file(self, fname, *, tgm = True):
+    async def to_file(self, fname, *, tgm = True):
         self._presave_checks()
-        with open(fname, 'w', newline='\n', encoding=ENCODING) as f:
+        with aiofiles.open(fname, 'w', newline='\n', encoding=ENCODING) as f:
             (save_tgm if tgm else save_dmm)(self, f)
 
     def to_bytes(self, *, tgm = True):
@@ -260,14 +261,14 @@ def fix_atom_ordering(atoms):
 # ----------
 # TGM writer
 
-def save_tgm(dmm, output):
-    output.write(f"{TGM_HEADER}\n")
+async def save_tgm(dmm, output):
+    await output.write(f"{TGM_HEADER}\n")
     if dmm.header:
-        output.write(f"{dmm.header}\n")
+        await output.write(f"{dmm.header}\n")
 
     # write dictionary in tgm format
     for key, value in sorted(dmm.dictionary.items()):
-        output.write(f'"{num_to_key(key, dmm.key_length)}" = (\n')
+        await output.write(f'"{num_to_key(key, dmm.key_length)}" = (\n')
         for idx, thing in enumerate(value):
             in_quote_block = False
             in_varedit_block = False
@@ -275,63 +276,63 @@ def save_tgm(dmm, output):
                 if in_quote_block:
                     if char == '"':
                         in_quote_block = False
-                    output.write(char)
+                    await output.write(char)
                 elif char == '"':
                     in_quote_block = True
-                    output.write(char)
+                    await output.write(char)
                 elif not in_varedit_block:
                     if char == "{":
                         in_varedit_block = True
-                        output.write("{\n\t")
+                        await output.write("{\n\t")
                     else:
-                        output.write(char)
+                        await output.write(char)
                 elif char == ";":
-                    output.write(";\n\t")
+                    await output.write(";\n\t")
                 elif char == "}":
-                    output.write("\n\t}")
+                    await output.write("\n\t}")
                     in_varedit_block = False
                 else:
-                    output.write(char)
+                    await output.write(char)
             if idx < len(value) - 1:
-                output.write(",\n")
-        output.write(")\n")
+                await output.write(",\n")
+        await output.write(")\n")
 
     # thanks to YotaXP for finding out about this one
     max_x, max_y, max_z = dmm.size
     for z in range(1, max_z + 1):
-        output.write("\n")
+        await output.write("\n")
         for x in range(1, max_x + 1):
-            output.write(f"({x},{1},{z}) = {{\"\n")
+            await output.write(f"({x},{1},{z}) = {{\"\n")
             for y in range(max_y, 0, -1):
-                output.write(f"{num_to_key(dmm.grid[x, y, z], dmm.key_length)}\n")
-            output.write("\"}\n")
+                await output.write(f"{num_to_key(dmm.grid[x, y, z], dmm.key_length)}\n")
+            await output.write("\"}\n")
 
 # ----------
 # DMM writer
 
-def save_dmm(dmm, output):
+async def save_dmm(dmm, output):
     if dmm.header:
-        output.write(f"{dmm.header}\n")
+        await output.write(f"{dmm.header}\n")
 
     # writes a tile dictionary the same way Dreammaker does
     for key, value in sorted(dmm.dictionary.items()):
-        output.write(f'"{num_to_key(key, dmm.key_length)}" = ({",".join(value)})\n')
+        await output.write(f'"{num_to_key(key, dmm.key_length)}" = ({",".join(value)})\n')
 
-    output.write("\n")
+    await output.write("\n")
 
     # writes a map grid the same way Dreammaker does
     max_x, max_y, max_z = dmm.size
     for z in range(1, max_z + 1):
-        output.write(f"(1,1,{z}) = {{\"\n")
+        await output.write(f"(1,1,{z}) = {{\"\n")
 
         for y in range(max_y, 0, -1):
             for x in range(1, max_x + 1):
                 #try:
-                output.write(num_to_key(dmm.grid[x, y, z], dmm.key_length))
+                await output.write(num_to_key(dmm.grid[x, y, z], dmm.key_length))
                 #except KeyError:
                     #print(f"Key error: ({x}, {y}, {z})")
-            output.write("\n")
-        output.write("\"}\n")
+            await output.write("\n")
+        await output.write("\"}\n")
 
 # ----------
 # Parser

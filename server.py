@@ -149,7 +149,7 @@ def hook_receive():
 
     for file in maps_changed:
         before_data = repo.get_contents(file.filename, ref=before).decoded_content.decode("utf-8")
-        after_data = repo.get_contents(file.filename, ref=after).decoded_content/decode("utf-8")
+        after_data = repo.get_contents(file.filename, ref=after).decoded_content.decode("utf-8")
         before_dmm = _parse(before_data)
         after_dmm = _parse(after_data)
         try:

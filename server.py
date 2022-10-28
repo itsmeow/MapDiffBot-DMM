@@ -159,7 +159,8 @@ def hook_receive():
             after_data = requests.get(f"https://api.github.com/repos/{full_name}/contents/{file.filename}?ref={after}", headers={"Accept": "application/vnd.github.3.raw"}).text
             before_dmm = _parse(before_data)
             after_dmm = _parse(after_data)
-        except:
+        except Exception as e:
+            print(e)
             print(f"Skipping map file {file.filename} due to error parsing data")
             result_text += f"### {file.filename}\n\n"
             result_text += f"Skipped due to error parsing data\n\n"

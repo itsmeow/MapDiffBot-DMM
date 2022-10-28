@@ -180,7 +180,7 @@ def hook_receive():
 
     check_run_object.edit(
     completed_at=get_iso_time(),
-    conclusion="completed",
+    conclusion="success",
     output={
         "title": name,
         "summary": f"{len(maps_changed)} maps changed",

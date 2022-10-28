@@ -53,7 +53,7 @@ Add the following permissions:
 
 Create a webhook redirecting to `webhook-url` on your server, with the following event subscriptions:
 
-- Check suite
+- Check run
 
 Create a client secret, add it to the configuration `app-key`.
 

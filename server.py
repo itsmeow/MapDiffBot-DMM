@@ -86,7 +86,8 @@ def hook_receive():
         if not validate_signature(request, config["webhook-secret"]):
             return "invalid signature"
     data = request.json
-    if not "action" in data.keys() or not "check-suite" in data.keys() or not data["action"] in ["requested", "rerequested"]:
+    if not "action" in data.keys() or not "check_run" in data.keys() or not data["action"] in ["requested", "rerequested", "created"]:
+        print(f"Invalid action or schema: {data['action']} {data.keys()}", file=sys.stderr)
         return "ok"
 
     owner = data["repository"]["owner"]["login"]
@@ -94,6 +95,7 @@ def hook_receive():
     full_name = data["repository"]["full_name"]
     if not owner or not repo_name:
         print(f"Missing owner/repo_name: {owner}/{repo_name}", file=sys.stderr)
+        return "ok"
     if full_name in config["banned-repos"]:
         print(f"Request from banned repository: {full_name}", file=sys.stderr)
         return "ok"
@@ -103,11 +105,11 @@ def hook_receive():
         ).token
     )
 
-    suite = data["check-suite"]
-    check_run_id = suite["id"]
-    commit_head_sha = suite["head_sha"]
-    before = suite["before"]
-    after = suite["after"]
+    check = data["check_run"]
+    check_run_id = check["id"]
+    commit_head_sha = check["head_sha"]
+    before = check["check_suite"]["before"]
+    after = check["check_suite"]["after"]
 
     repo = git_connection.get_repo(full_name)
     check_run_object = repo.create_check_run(

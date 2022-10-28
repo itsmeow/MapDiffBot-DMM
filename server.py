@@ -160,12 +160,12 @@ async def do_request(data, owner, repo_name, full_name):
 
     download_tasks = []
     for file in maps_changed:
-        download_tasks.append(asyncio.create_task(get_file(f"https://api.github.com/repos/{full_name}/contents/{file.filename}?ref={before}", token)))
-        download_tasks.append(asyncio.create_task(get_file(f"https://api.github.com/repos/{full_name}/contents/{file.filename}?ref={after}", token)))
+        download_tasks.append(asyncio.ensure_future(aiohttp.request("GET", f"https://api.github.com/repos/{full_name}/contents/{file.filename}?ref={before}", headers={"Accept": "application/vnd.github.3.raw", "Authorization": f"Bearer {token}"})))
+        download_tasks.append(asyncio.ensure_future(aiohttp.request("GET", f"https://api.github.com/repos/{full_name}/contents/{file.filename}?ref={after}", headers={"Accept": "application/vnd.github.3.raw", "Authorization": f"Bearer {token}"})))
     downloads = []
     try:
         print(f"Downloading {unique_id}", file=sys.stderr)
-        downloads = await asyncio.gather(*download_tasks)
+        downloads = await asyncio.gather_with_concurrency(3, *download_tasks)
     except Exception as e:
         print(e)
         print(f"WARNING: Encountered error for check {unique_id} while performing data download", file=sys.stderr)
@@ -258,16 +258,13 @@ def get_dmm(filename):
 # Helpers
 # --------
 
-download_sem = asyncio.Semaphore(3)
+async def gather_with_concurrency(n, *coros):
+    semaphore = asyncio.Semaphore(n)
 
-async def get_file(url, token):
-    async with aiohttp.ClientSession() as session:
-        async with download_sem:
-            async with session.get(url, headers={"Accept": "application/vnd.github.3.raw", "Authorization": f"Bearer {token}"}) as resp:
-                if resp.status != 200:
-                    print(f"error response {resp.status} for {url}", file=sys.stderr)
-                    pass
-                return await resp.text()
+    async def sem_coro(coro):
+        async with semaphore:
+            return await coro
+    return await asyncio.gather(*(sem_coro(c) for c in coros))
 
 def get_iso_time():
     return datetime.utcnow().replace(microsecond=0)

@@ -171,7 +171,7 @@ async def do_request(data, owner, repo_name, full_name):
         print(f"WARNING: Encountered error for check {unique_id} while performing data download", file=sys.stderr)
         check_run_object.edit(
         completed_at=get_iso_time(),
-        conclusion="failure",
+        conclusion="skipped",
         output={
             "title": name,
             "summary": f"error encountered while performing data download"
@@ -196,7 +196,7 @@ async def do_request(data, owner, repo_name, full_name):
         print(f"WARNING: Encountered error for check {unique_id} while performing diff", file=sys.stderr)
         check_run_object.edit(
         completed_at=get_iso_time(),
-        conclusion="failure",
+        conclusion="skipped",
         output={
             "title": name,
             "summary": f"error encountered while performing diff"
@@ -231,7 +231,7 @@ async def do_request(data, owner, repo_name, full_name):
         print(f"WARNING: Encountered error for check {unique_id} while writing", file=sys.stderr)
         check_run_object.edit(
         completed_at=get_iso_time(),
-        conclusion="failure",
+        conclusion="skipped",
         output={
             "title": name,
             "summary": f"error encountered while writing"

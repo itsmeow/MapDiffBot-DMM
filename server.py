@@ -158,8 +158,8 @@ async def do_request(data, owner, repo_name, full_name):
 
     download_tasks = []
     for file in maps_changed:
-        download_tasks.append(asyncio.ensure_future(aiohttp.request("GET", f"https://api.github.com/repos/{full_name}/contents/{file.filename}?ref={before}", headers={"Accept": "application/vnd.github.3.raw", "Authorization": f"Bearer {token}"})))
-        download_tasks.append(asyncio.ensure_future(aiohttp.request("GET", f"https://api.github.com/repos/{full_name}/contents/{file.filename}?ref={after}", headers={"Accept": "application/vnd.github.3.raw", "Authorization": f"Bearer {token}"})))
+        download_tasks.append(asyncio.create_task(get_file(f"https://api.github.com/repos/{full_name}/contents/{file.filename}?ref={before}", token)))
+        download_tasks.append(asyncio.create_task(get_file(f"https://api.github.com/repos/{full_name}/contents/{file.filename}?ref={after}", token)))
     downloads = []
     try:
         print(f"Downloading {unique_id}", file=sys.stderr)
@@ -182,7 +182,7 @@ async def do_request(data, owner, repo_name, full_name):
         file = maps_changed[i // 2]
         before_dmm = _parse(await downloads[i].text())
         after_dmm = _parse(await downloads[i + 1].text())
-        diff_tasks.append(asyncio.ensure_future(create_diff(before_dmm, after_dmm)))
+        diff_tasks.append(asyncio.create_task(create_diff(before_dmm, after_dmm)))
         i += 2
     diffs = []
     try:
@@ -252,6 +252,11 @@ def get_dmm(filename):
 
 # Helpers
 # --------
+
+async def get_file(url, token):
+    async with aiohttp.ClientSession(headers={"Accept": "application/vnd.github.3.raw", "Authorization": f"Bearer {token}"}) as session:
+        async with session.get(url) as resp:
+            return await resp.text()
 
 def get_iso_time():
     return datetime.utcnow().replace(microsecond=0)

@@ -165,7 +165,7 @@ async def do_request(data, owner, repo_name, full_name):
     downloads = []
     try:
         print(f"Downloading {unique_id}", file=sys.stderr)
-        downloads = await asyncio.gather_with_concurrency(3, *download_tasks)
+        downloads = await gather_with_concurrency(3, *download_tasks)
     except Exception as e:
         print(e)
         print(f"WARNING: Encountered error for check {unique_id} while performing data download", file=sys.stderr)

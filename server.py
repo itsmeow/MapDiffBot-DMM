@@ -1,4 +1,4 @@
-from fileinput import filename
+import asyncio
 import os
 import sys
 import re
@@ -6,6 +6,7 @@ import json
 import hmac
 import hashlib
 import requests
+from threading import Thread
 from datetime import datetime
 from .dmm import _parse
 from .diff import create_diff
@@ -92,27 +93,32 @@ git = GithubIntegration(
 )
 
 @app.route(webhook_path, methods=["POST"])
-def hook_receive():
+async def hook_receive():
     if len(config["webhook-secret"]):
         if not validate_signature(request, config["webhook-secret"]):
-            return "invalid signature"
+            return "invalid signature", 400
     data = request.json
     if not "action" in data.keys() or not "pull_request" in data.keys() or not data["action"] in ["opened", "synchronize"]:
         print(f"Invalid action or schema: {data['action']} {data.keys()}", file=sys.stderr)
-        return "ok"
+        return "invalid action/schema", 400
 
     owner = data["repository"]["owner"]["login"]
     repo_name = data["repository"]["name"]
     full_name = data["repository"]["full_name"]
     if not owner or not repo_name:
         print(f"Missing owner/repo_name: {owner}/{repo_name}", file=sys.stderr)
-        return "ok"
+        return "missing owner/repo", 400
     if full_name in config["banned-repos"]:
         print(f"Request from banned repository: {full_name}", file=sys.stderr)
-        return "ok"
+        return "banned repository", 403
+    thread = Thread(target=do_request, kwargs={'data': data, 'owner': owner, 'repo_name': repo_name, 'full_name': full_name})
+    thread.start()
+    return "ok"
+
+async def do_request(data, owner, repo_name, full_name):
     token = git.get_access_token(
-            git.get_installation(owner, repo_name).id
-        ).token
+        git.get_installation(owner, repo_name).id
+    ).token
     git_connection = Github(
         login_or_token=token
     )
@@ -136,7 +142,7 @@ def hook_receive():
             "title": name,
             "summary": "pull request ignored"
         })
-        return "ok"
+        return
 
     check_run_object = repo.create_check_run(
     name=name,
@@ -150,24 +156,50 @@ def hook_receive():
 
     result_text = "## Maps Changed\n\n" if len(maps_changed) > 0 else "No maps changed"
 
+    download_tasks = []
     for file in maps_changed:
-        before_data = None
-        after_data = None
-        before_dmm = None
-        after_dmm = None
-        try:
-            before_data = requests.get(f"https://api.github.com/repos/{full_name}/contents/{file.filename}?ref={before}", headers={"Accept": "application/vnd.github.3.raw", "Authorization": f"Bearer {token}"}).text
-            after_data = requests.get(f"https://api.github.com/repos/{full_name}/contents/{file.filename}?ref={after}", headers={"Accept": "application/vnd.github.3.raw", "Authorization": f"Bearer {token}"}).text
-            before_dmm = _parse(before_data)
-            after_dmm = _parse(after_data)
-        except Exception as e:
-            print(str(e))
-            print(f"Skipping map file {file.filename} due to error parsing data")
-            result_text += f"### {file.filename}\n\n"
-            result_text += f"Skipped due to error parsing data\n\n"
-            continue
-        try:
-            tiles_changed, diff_dmm, note, movables_added, movables_deleted, turfs_changed, areas_changed = create_diff(before_dmm, after_dmm)
+        download_tasks.append(asyncio.create_task(requests.get(f"https://api.github.com/repos/{full_name}/contents/{file.filename}?ref={before}", headers={"Accept": "application/vnd.github.3.raw", "Authorization": f"Bearer {token}"}).text))
+        download_tasks.append(asyncio.create_task(requests.get(f"https://api.github.com/repos/{full_name}/contents/{file.filename}?ref={after}", headers={"Accept": "application/vnd.github.3.raw", "Authorization": f"Bearer {token}"}).text))
+    downloads = []
+    try:
+        downloads = await asyncio.gather(*download_tasks)
+    except:
+        print(f"WARNING: Encountered error for check {unique_id} while performing data download", file=sys.stderr)
+        check_run_object.edit(
+        completed_at=get_iso_time(),
+        conclusion="failure",
+        output={
+            "title": name,
+            "summary": f"error encountered while performing data download"
+        }
+        )
+        return
+    diff_tasks = []
+    i = 0
+    while i < len(maps_changed) * 2:
+        file = maps_changed[i // 2]
+        before_dmm = _parse(downloads[i])
+        after_dmm = _parse(downloads[i + 1])
+        diff_tasks.append(asyncio.create_task(create_diff(before_dmm, after_dmm)))
+        i += 2
+    diffs = []
+    try:
+        diffs = await asyncio.gather(*diff_tasks)
+    except:
+        print(f"WARNING: Encountered error for check {unique_id} while performing diff", file=sys.stderr)
+        check_run_object.edit(
+        completed_at=get_iso_time(),
+        conclusion="failure",
+        output={
+            "title": name,
+            "summary": f"error encountered while performing diff"
+        }
+        )
+        return
+    io_tasks = []
+    for diff in diffs:
+        
+            tiles_changed, diff_dmm, note, movables_added, movables_deleted, turfs_changed, areas_changed = diff
             result_text += f"### {file.filename}\n\n"
             if not note is None:
                 result_text += f"{note}\n\n"
@@ -182,31 +214,23 @@ def hook_receive():
             file_name_safe = hashlib.sha1(file_uuid.encode("utf-8")).hexdigest() + ".dmm"
             out_file_path = dmm_save_path + file_name_safe
             result_text += f"Download: [diff]({host}{dmm_url}/{file_name_safe})\n"
-            try:
-                diff_dmm.to_file(out_file_path)
-                print(f"Writing diff: {out_file_path}", file=sys.stderr)
-            except:
-                print(f"WARNING: Encountered error for check {unique_id} while writing to file: {out_file_path}", file=sys.stderr)
-                check_run_object.edit(
-                completed_at=get_iso_time(),
-                conclusion="failure",
-                output={
-                    "title": name,
-                    "summary": f"error encountered while writing file"
-                }
-                )
-                return "ok"
-        except:
-            print(f"WARNING: Encountered error for check {unique_id} while performing diff", file=sys.stderr)
-            check_run_object.edit(
-            completed_at=get_iso_time(),
-            conclusion="failure",
-            output={
-                "title": name,
-                "summary": f"error encountered while performing diff"
-            }
-            )
-            return "ok"
+            io_tasks.append(asyncio.create_task(diff_dmm.to_file(out_file_path)))
+            print(f"Generated diff: {out_file_path}", file=sys.stderr)
+    try:
+        print(f"Starting writes", file=sys.stderr)
+        await asyncio.gather(*io_tasks)
+        print(f"Writes complete", file=sys.stderr)
+    except:
+        print(f"WARNING: Encountered error for check {unique_id} while writing", file=sys.stderr)
+        check_run_object.edit(
+        completed_at=get_iso_time(),
+        conclusion="failure",
+        output={
+            "title": name,
+            "summary": f"error encountered while writing"
+        }
+        )
+        return
 
     check_run_object.edit(
     completed_at=get_iso_time(),
@@ -217,9 +241,6 @@ def hook_receive():
         "text": result_text,
     }
     )
-
-    return "ok"
-
 
 @app.route(dmm_url + "/<filename>", methods=["GET"])
 def get_dmm(filename):

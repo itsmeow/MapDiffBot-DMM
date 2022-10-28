@@ -168,9 +168,9 @@ async def do_request(data, owner, repo_name, full_name):
             a = executor.submit(get_file, f"https://api.github.com/repos/{full_name}/contents/{file.filename}?ref={after}", token)
             download_tasks.append(b)
             download_tasks.append(a)
+        print(f"Downloading {unique_id}", file=sys.stderr)
         for future in concurrent.futures.as_completed(download_tasks):
             try:
-                print(f"Downloading {unique_id}", file=sys.stderr)
                 downloads.append(future.result())
             except Exception as e:
                 print(e)
@@ -231,7 +231,7 @@ async def do_request(data, owner, repo_name, full_name):
             result_text += f"Download: [diff]({host}{dmm_url}/{file_name_safe})\n"
             t = executor.submit(diff_dmm.to_file, out_file_path)
             io_tasks.append(t)
-            print(f"Generated diff: {out_file_path}", file=sys.stderr)
+            #print(f"Generated diff: {out_file_path}", file=sys.stderr)
         try:
             print(f"Starting writes", file=sys.stderr)
             for future in concurrent.futures.as_completed(io_tasks):

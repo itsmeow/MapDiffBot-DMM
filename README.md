@@ -17,19 +17,29 @@ python diff.py old.dmm new.dmm diff.dmm
 ## Configuration
 
 `app-id`: The App ID of your Github app. Listed under "About"
+
 `app-key`: This is the client secret of your app. Generate one and then paste it.
+
 `host`: Base URL to direct map downloads to (if `host-dmms` is enabled, it should point to this server).
+
 `dmm-url`: URL path to direct map downloads to (appended to host, starts with /). Also used to listen for requests if `host-dmms` is enabled.
+
 `webhook-url`: URL path to listen for webhook requests on (start with /)
+
 `webhook-secret`: Optional, webhook secret used to sign/verify requests are from GitHub, if you created one
+
 `host-dmms`: If this server should host the DMM files from the folder it saves to and serve them.
+
 `dmm-save-path`: Filesystem location to save DMM files to.
+
 `banned-repos`: List of repo paths that are not processed (format: "Owner/RepoName")
 
 ### Development Options
 
 `port`: Port to listen to webhook requests on.
+
 `debug`: Enables Flask's debug mode.
+
 `threaded`: Enables Flask's threading - you definitely want this, as it allows multiple requests to be processed asynchronously.
 
 ## GitHub App Setup

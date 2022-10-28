@@ -184,67 +184,71 @@ async def do_request(data, owner, repo_name, full_name):
                 }
                 )
                 return
-
-    print(f"Parsing {unique_id}", file=sys.stderr)
-    diff_tasks = []
-    i = 0
-    while i < len(maps_changed) * 2:
-        file = maps_changed[i // 2]
-        before_dmm = _parse(downloads[i])
-        after_dmm = _parse(downloads[i + 1])
-        diff_tasks.append(asyncio.create_task(create_diff(before_dmm, after_dmm)))
-        i += 2
-    diffs = []
-    try:
-        print(f"Diffing {unique_id}", file=sys.stderr)
-        diffs = await asyncio.gather(*diff_tasks)
-    except Exception as e:
-        print(e)
-        print(f"WARNING: Encountered error for check {unique_id} while performing diff", file=sys.stderr)
-        check_run_object.edit(
-        completed_at=get_iso_time(),
-        conclusion="skipped",
-        output={
-            "title": name,
-            "summary": f"error encountered while performing diff"
-        }
-        )
-        return
-    io_tasks = []
-    for diff in diffs:
-        tiles_changed, diff_dmm, note, movables_added, movables_deleted, turfs_changed, areas_changed = diff
-        result_text += f"### {file.filename}\n\n"
-        if not note is None:
-            result_text += f"{note}\n\n"
-        if(diff_dmm == None):
-            continue
-        result_text += f"{tiles_changed} tiles changed\n"
-        result_text += f"{movables_added} movables added, {movables_deleted} movables deleted\n"
-        result_text += f"{turfs_changed} turfs changed\n"
-        result_text += f"{areas_changed} areas changed\n"
-        file_uuid = unique_id + "-" + re.sub(r'[^\w]', '-', file.filename)
-        # Generate a unique name hashed on all unique fields
-        file_name_safe = hashlib.sha1(file_uuid.encode("utf-8")).hexdigest() + ".dmm"
-        out_file_path = dmm_save_path + file_name_safe
-        result_text += f"Download: [diff]({host}{dmm_url}/{file_name_safe})\n"
-        io_tasks.append(asyncio.create_task(diff_dmm.to_file(out_file_path)))
-        print(f"Generated diff: {out_file_path}", file=sys.stderr)
-    try:
-        print(f"Starting writes", file=sys.stderr)
-        await asyncio.gather(*io_tasks)
-        print(f"Writes complete", file=sys.stderr)
-    except Exception as e:
-        print(e)
-        print(f"WARNING: Encountered error for check {unique_id} while writing", file=sys.stderr)
-        check_run_object.edit(
-        completed_at=get_iso_time(),
-        conclusion="skipped",
-        output={
-            "title": name,
-            "summary": f"error encountered while writing"
-        }
-        )
-        return
+    with concurrent.futures.ThreadPoolExecutor(max_workers=20) as executor:
+        print(f"Parsing {unique_id}", file=sys.stderr)
+        diff_tasks = []
+        i = 0
+        while i < len(maps_changed) * 2:
+            file = maps_changed[i // 2]
+            before_dmm = _parse(downloads[i])
+            after_dmm = _parse(downloads[i + 1])
+            d = executor.submit(create_diff, before_dmm, after_dmm)
+            diff_tasks.append(d)
+            i += 2
+        diffs = []
+        try:
+            print(f"Diffing {unique_id}", file=sys.stderr)
+            for future in concurrent.futures.as_completed(diff_tasks):
+                diffs.append(future.result())
+        except Exception as e:
+            print(e)
+            print(f"WARNING: Encountered error for check {unique_id} while performing diff", file=sys.stderr)
+            check_run_object.edit(
+            completed_at=get_iso_time(),
+            conclusion="skipped",
+            output={
+                "title": name,
+                "summary": f"error encountered while performing diff"
+            }
+            )
+            return
+        io_tasks = []
+        for diff in diffs:
+            tiles_changed, diff_dmm, note, movables_added, movables_deleted, turfs_changed, areas_changed = diff
+            result_text += f"### {file.filename}\n\n"
+            if not note is None:
+                result_text += f"{note}\n\n"
+            if(diff_dmm == None):
+                continue
+            result_text += f"{tiles_changed} tiles changed\n"
+            result_text += f"{movables_added} movables added, {movables_deleted} movables deleted\n"
+            result_text += f"{turfs_changed} turfs changed\n"
+            result_text += f"{areas_changed} areas changed\n"
+            file_uuid = unique_id + "-" + re.sub(r'[^\w]', '-', file.filename)
+            # Generate a unique name hashed on all unique fields
+            file_name_safe = hashlib.sha1(file_uuid.encode("utf-8")).hexdigest() + ".dmm"
+            out_file_path = dmm_save_path + file_name_safe
+            result_text += f"Download: [diff]({host}{dmm_url}/{file_name_safe})\n"
+            t = executor.submit(diff_dmm.to_file, out_file_path)
+            io_tasks.append(t)
+            print(f"Generated diff: {out_file_path}", file=sys.stderr)
+        try:
+            print(f"Starting writes", file=sys.stderr)
+            for future in concurrent.futures.as_completed(io_tasks):
+                future.result()
+            print(f"Writes complete", file=sys.stderr)
+        except Exception as e:
+            print(e)
+            print(f"WARNING: Encountered error for check {unique_id} while writing", file=sys.stderr)
+            check_run_object.edit(
+            completed_at=get_iso_time(),
+            conclusion="skipped",
+            output={
+                "title": name,
+                "summary": f"error encountered while writing"
+            }
+            )
+            return
 
     check_run_object.edit(
     completed_at=get_iso_time(),

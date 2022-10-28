@@ -17,7 +17,7 @@ def diff_turf_or_area(old, new):
 def create_obj(name, desc):
     return f'/obj{{name = "{name}";\n\tdesc = "{desc}"}}'
 
-async def create_diff(dmm_old, dmm_new):
+def create_diff(dmm_old, dmm_new):
     if dmm_old.size != dmm_new.size:
         return 0, None, f"Size changed: {dmm_old.size} to {dmm_new.size}", 0, 0, 0, 0
 

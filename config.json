@@ -8,7 +8,7 @@
   "webhook-secret": "",
   "dmm-save-path": "dmms/",
   "host-dmms": true,
-  "banned_repos": [],
+  "banned-repos": [],
   "debug": false,
   "threaded": true,
   "port": 5000

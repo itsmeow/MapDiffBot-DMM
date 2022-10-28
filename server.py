@@ -189,6 +189,8 @@ def get_iso_time():
     return datetime.utcnow().replace(microsecond=0).isoformat() + "Z"
 
 def validate_signature(payload, secret):
+    if not 'X-Hub-Signature' in payload.headers:
+        return False
     signature_header = payload.headers['X-Hub-Signature']
     sha_name, github_signature = signature_header.split('=')
     if sha_name != 'sha1':

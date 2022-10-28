@@ -201,7 +201,7 @@ def get_dmm(filename):
 # --------
 
 def get_iso_time():
-    return datetime.utcnow().replace(microsecond=0).isoformat() + "Z"
+    return datetime.utcnow().replace(microsecond=0)
 
 def validate_signature(payload, secret):
     if not 'X-Hub-Signature' in payload.headers:

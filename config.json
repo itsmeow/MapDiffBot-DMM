@@ -1,0 +1,15 @@
+{
+  "name": "MapDiffBot-DMM",
+  "app-id": "YOUR APP ID HERE",
+  "app-key": "YOUR APP CLIENT SECRET HERE",
+  "host": "https://YOUR APP URL HERE",
+  "dmm-url": "/map-diff",
+  "webhook-path": "/webhook",
+  "webhook-secret": "",
+  "dmm-save-path": "dmms/",
+  "host-dmms": true,
+  "banned_repos": [],
+  "debug": false,
+  "threaded": true,
+  "port": 5000
+}

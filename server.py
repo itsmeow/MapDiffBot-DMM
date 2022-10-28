@@ -1,4 +1,5 @@
 import os
+import sys
 import re
 import json
 import hmac
@@ -18,47 +19,47 @@ f.close()
 
 name = config["name"]
 if not name or len(name) == 0:
-    print("Must specify a check name in config!")
+    print("Must specify a check name in config!", file=sys.stderr)
     exit(1)
 port = config["port"]
 if not port in range(0, 65536):
-    print("Port must be a number between 0 and 65536 in config!")
+    print("Port must be a number between 0 and 65536 in config!", file=sys.stderr)
     exit(1)
 host = config["host"]
 if host.endswith("/"):
     host[:len(host) - 1]
 if not host or len(host) == 0:
-    print("Must specify a host url in config!")
+    print("Must specify a host url in config!", file=sys.stderr)
     exit(1)
 dmm_url = config["dmm-url"]
 if not dmm_url.startswith("/"):
-    print("DMM url must start with a slash!")
+    print("DMM url must start with a slash!", file=sys.stderr)
     exit(1)
 if dmm_url.endswith("/"):
     dmm_url[:len(dmm_url) - 1]
 if not dmm_url or len(dmm_url) == 0:
-    print("Must specify a dmm url in config!")
+    print("Must specify a dmm url in config!", file=sys.stderr)
     exit(1)
 dmm_save_path = config["dmm-save-path"]
 if not dmm_save_path.endswith("/"):
     dmm_save_path += "/"
 if not dmm_save_path or len(dmm_save_path) == 0:
-    print("Must specify a DMM save path in config!")
+    print("Must specify a DMM save path in config!", file=sys.stderr)
     exit(1)
 if not os.path.exists(dmm_save_path):
     os.makedirs(dmm_save_path)
     print("Creating DMM save folder...")
 if not os.access(dmm_save_path, os.W_OK):
-    print(f"Cannot write to specified DMM save path: {dmm_save_path}")
+    print(f"Cannot write to specified DMM save path: {dmm_save_path}", file=sys.stderr)
     exit(1)
 webhook_path = config["webhook-path"]
 if not webhook_path.startswith("/"):
-    print("Webhook path must start with a slash!")
+    print("Webhook path must start with a slash!", file=sys.stderr)
     exit(1)
 if webhook_path.endswith("/"):
     webhook_path[:len(webhook_path) - 1]
 if not webhook_path or len(webhook_path) == 0:
-    print("Must specify a webhook path in config!")
+    print("Must specify a webhook path in config!", file=sys.stderr)
     exit(1)
 
 # App
@@ -131,7 +132,7 @@ def hook_receive():
                 diff_dmm.to_file(out_file_path)
                 print(f"Writing diff: {out_file_path}")
             except:
-                print(f"WARNING: Encountered error for check {check_run_id} while writing to file: {out_file_path}")
+                print(f"WARNING: Encountered error for check {check_run_id} while writing to file: {out_file_path}", file=sys.stderr)
                 check_run_object.edit(
                 completed_at=get_iso_time(),
                 conclusion="failure",
@@ -142,7 +143,7 @@ def hook_receive():
                 )
                 return "ok"
         except:
-            print(f"WARNING: Encountered error for check {check_run_id} while performing diff")
+            print(f"WARNING: Encountered error for check {check_run_id} while performing diff", file=sys.stderr)
             check_run_object.edit(
             completed_at=get_iso_time(),
             conclusion="failure",
@@ -182,7 +183,7 @@ def validate_signature(payload, secret):
     signature_header = payload.headers['X-Hub-Signature']
     sha_name, github_signature = signature_header.split('=')
     if sha_name != 'sha1':
-        print('ERROR: X-Hub-Signature in payload headers was not sha1=****')
+        print('ERROR: X-Hub-Signature in payload headers was not sha1=****', file=sys.stderr)
         return False
     local_signature = hmac.new(secret.encode('utf-8'), msg=payload.data, digestmod=hashlib.sha1)
     return hmac.compare_digest(local_signature.hexdigest(), github_signature)

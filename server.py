@@ -164,10 +164,8 @@ async def do_request(data, owner, repo_name, full_name):
     with concurrent.futures.ThreadPoolExecutor(max_workers=config["threads-network"]) as executor:
         download_tasks = []
         for file in maps_changed:
-            b = executor.submit(get_file, f"https://api.github.com/repos/{full_name}/contents/{file.filename}?ref={before}", token)
-            a = executor.submit(get_file, f"https://api.github.com/repos/{full_name}/contents/{file.filename}?ref={after}", token)
+            b = executor.submit(get_fileset, full_name, file.filename, before, after, token)
             download_tasks.append(b)
-            download_tasks.append(a)
         print(f"Downloading {unique_id}", file=sys.stderr)
         for future in concurrent.futures.as_completed(download_tasks):
             try:
@@ -187,14 +185,12 @@ async def do_request(data, owner, repo_name, full_name):
     with concurrent.futures.ThreadPoolExecutor(max_workers=config["threads-fileio"]) as executor:
         print(f"Parsing {unique_id}", file=sys.stderr)
         diff_tasks = []
-        i = 0
-        while i < len(maps_changed) * 2:
-            file = maps_changed[i // 2]
-            before_dmm = _parse(downloads[i])
-            after_dmm = _parse(downloads[i + 1])
-            d = executor.submit(create_diff, before_dmm, after_dmm, file.filename)
+        for download in downloads:
+            before, after, filename = download
+            before_dmm = _parse(before)
+            after_dmm = _parse(after)
+            d = executor.submit(create_diff, before_dmm, after_dmm, filename)
             diff_tasks.append(d)
-            i += 2
         diffs = []
         try:
             print(f"Diffing {unique_id}", file=sys.stderr)
@@ -271,6 +267,11 @@ def get_dmm(filename):
 
 def get_file(url, token):
     return requests.get(url, headers={"Accept": "application/vnd.github.3.raw", "Authorization": f"Bearer {token}"}).text
+
+def get_fileset(full_name, filename, before, after, token):
+    before =  get_file(f"https://api.github.com/repos/{full_name}/contents/{filename}?ref={before}", token)
+    after = get_file(f"https://api.github.com/repos/{full_name}/contents/{filename}?ref={after}", token)
+    return (before, after, filename)
 
 def get_iso_time():
     return datetime.utcnow().replace(microsecond=0)

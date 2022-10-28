@@ -19,7 +19,7 @@ def create_obj(name, desc):
 
 def create_diff(dmm_old, dmm_new, filename):
     if dmm_old.size != dmm_new.size:
-        return 0, None, f"Size changed: {dmm_old.size} to {dmm_new.size}", 0, 0, 0, 0
+        return 0, None, f"Size changed: {dmm_old.size} to {dmm_new.size}", 0, 0, 0, 0, filename
 
     diffed_dmm = DMM(dmm_old.key_length, dmm_old.size)
     diffed_dmm.dictionary = dmm_old.dictionary.copy()

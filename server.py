@@ -190,8 +190,8 @@ async def do_request(data, owner, repo_name, full_name):
     i = 0
     while i < len(maps_changed) * 2:
         file = maps_changed[i // 2]
-        before_dmm = _parse(await downloads[i].text())
-        after_dmm = _parse(await downloads[i + 1].text())
+        before_dmm = _parse(downloads[i])
+        after_dmm = _parse(downloads[i + 1])
         diff_tasks.append(asyncio.create_task(create_diff(before_dmm, after_dmm)))
         i += 2
     diffs = []
@@ -265,7 +265,7 @@ def get_dmm(filename):
 # Helpers
 # --------
 
-async def get_file(url, token):
+def get_file(url, token):
     return requests.get(url, headers={"Accept": "application/vnd.github.3.raw", "Authorization": f"Bearer {token}"}).text
 
 def get_iso_time():

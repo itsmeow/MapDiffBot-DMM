@@ -1,9 +1,11 @@
+from fileinput import filename
 import os
 import sys
 import re
 import json
 import hmac
 import hashlib
+import requests
 from datetime import datetime
 from .dmm import _parse
 from .diff import create_diff
@@ -153,14 +155,14 @@ def hook_receive():
         before_dmm = None
         after_dmm = None
         try:
-            before_data = repo.get_contents(file.filename, ref=before).decoded_content.decode("utf-8")
-            after_data = repo.get_contents(file.filename, ref=after).decoded_content.decode("utf-8")
+            before_data = requests.get(f"https://api.github.com/repos/{full_name}/contents/{file.filename}?ref={before}", headers={"Accept": "application/vnd.github.3.raw"}).text
+            after_data = requests.get(f"https://api.github.com/repos/{full_name}/contents/{file.filename}?ref={before}", headers={"Accept": "application/vnd.github.3.raw"}).text
             before_dmm = _parse(before_data)
             after_dmm = _parse(after_data)
         except:
             print(f"Skipping map file {file.filename} due to error parsing data")
             result_text += f"### {file.filename}\n\n"
-            result_text += f"Skipped due to error parsing data"
+            result_text += f"Skipped due to error parsing data\n\n"
             continue
         try:
             tiles_changed, diff_dmm, note, movables_added, movables_deleted, turfs_changed, areas_changed = create_diff(before_dmm, after_dmm)

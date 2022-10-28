@@ -121,6 +121,20 @@ def hook_receive():
     unique_id = re.sub(r'[^\w]', '-', full_name + "-" + str(pull_request["id"]) + "-" + before + "-" + after)
 
     repo = git_connection.get_repo(full_name)
+
+    if "[mdb ignore]" in pull_request["title"].lower():
+        repo.create_check_run(
+        name=name,
+        head_sha=commit_head_sha,
+        started_at=get_iso_time(),
+        completed_at=get_iso_time(),
+        conclusion="skipped",
+        output={
+            "title": name,
+            "summary": "pull request ignored"
+        })
+        return "ok"
+
     check_run_object = repo.create_check_run(
     name=name,
     head_sha=commit_head_sha,
@@ -128,8 +142,8 @@ def hook_receive():
     started_at=get_iso_time())
 
     diff = repo.compare(before, after)
-    maps_changed = list(filter(lambda file: file.status == "modified" and file.filename.endswith(".dmm"), diff.files))
-    print(f"Created check run {unique_id} from {before} to {after} ({maps_changed} maps changed)", file=sys.stderr)
+    maps_changed = list(filter(lambda file: file.status == "modified" and file.filename.endswith(".dmm"), diff["files"]))
+    print(f"Created check run {unique_id} ({maps_changed} maps changed)", file=sys.stderr)
 
     result_text = "## Maps Changed\n\n" if len(maps_changed) > 0 else "No maps changed"
 
@@ -180,7 +194,7 @@ def hook_receive():
 
     check_run_object.edit(
     completed_at=get_iso_time(),
-    conclusion="success",
+    conclusion="success" if len(maps_changed) > 0 else "skipped",
     output={
         "title": name,
         "summary": f"{len(maps_changed)} maps changed",

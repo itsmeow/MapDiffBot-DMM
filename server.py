@@ -5,8 +5,8 @@ import json
 import hmac
 import hashlib
 from datetime import datetime
-from dmm import _parse
-from diff import create_diff
+from .dmm import _parse
+from .diff import create_diff
 from flask import Flask, request, send_from_directory
 from github import Github, GithubIntegration
 

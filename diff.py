@@ -1,5 +1,5 @@
 import sys
-from dmm import DMM, split_atom_groups
+from .dmm import DMM, split_atom_groups
 
 def diff_turf_or_area(old, new):
     result = []

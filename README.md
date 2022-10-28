@@ -8,10 +8,10 @@ MapDiffBot-DMM generates DMM files showing the changes in a map via GitHub's Che
 
 Diffs can be generated directly (without using GitHub) by directly calling diff.py with files as arguments.
 
-Ex:
+Example (run from a directory above the repo, with the repo folder named MapDiffBot-DMM, because python is a terrible language for modular code):
 
 ```sh
-python diff.py old.dmm new.dmm diff.dmm
+python -m MapDiffBot-DMM.diff old.dmm new.dmm diff.dmm
 ```
 
 ## Configuration
@@ -68,3 +68,5 @@ There are many options for deploying Flask applications, pick any from [Flask's 
 Do note that due to how this is written, it won't work without an accessible local filesystem. Depending on your deployment, you may want to disable `host-dmms`, as many webservers can easily serve a folder as downloads with little configuration.
 
 For use with `mod_wsgi`, a `mapdiffbot-dmm.wsgi` is included.
+
+Also note that python is picky about module folder names, you should rename the folder of the downloaded copy of this repo to `mapdiffbotdmm`.

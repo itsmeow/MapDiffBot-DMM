@@ -13,9 +13,15 @@ from github import Github, GithubIntegration
 # Parse config
 # --------------
 
-f = open("config.json")
-config = json.load(f)
-f.close()
+config = {}
+
+try:
+    f = open("config.json")
+    config = json.load(f)
+    f.close()
+except:
+    print("Error reading config!", file=sys.stderr)
+    exit(1)
 
 name = config["name"]
 if not name or len(name) == 0:

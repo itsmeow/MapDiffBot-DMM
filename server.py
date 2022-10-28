@@ -25,7 +25,8 @@ try:
     f = open(os.path.join(config_path, "config.json"))
     config = json.load(f)
     f.close()
-except:
+except Exception as e:
+    print(e)
     print("Error reading config!", file=sys.stderr)
     exit(1)
 
@@ -82,7 +83,8 @@ app_key = None
 try:
     with open(config["app-key-path"]) as key:
         app_key = key.read()
-except:
+except Exception as e:
+    print(e)
     print("Error reading app key!", file=sys.stderr)
     exit(1)
 
@@ -164,7 +166,8 @@ async def do_request(data, owner, repo_name, full_name):
     try:
         print(f"Downloading {unique_id}", file=sys.stderr)
         downloads = await asyncio.gather(*download_tasks)
-    except:
+    except Exception as e:
+        print(e)
         print(f"WARNING: Encountered error for check {unique_id} while performing data download", file=sys.stderr)
         check_run_object.edit(
         completed_at=get_iso_time(),
@@ -188,7 +191,8 @@ async def do_request(data, owner, repo_name, full_name):
     try:
         print(f"Diffing {unique_id}", file=sys.stderr)
         diffs = await asyncio.gather(*diff_tasks)
-    except:
+    except Exception as e:
+        print(e)
         print(f"WARNING: Encountered error for check {unique_id} while performing diff", file=sys.stderr)
         check_run_object.edit(
         completed_at=get_iso_time(),
@@ -222,7 +226,8 @@ async def do_request(data, owner, repo_name, full_name):
         print(f"Starting writes", file=sys.stderr)
         await asyncio.gather(*io_tasks)
         print(f"Writes complete", file=sys.stderr)
-    except:
+    except Exception as e:
+        print(e)
         print(f"WARNING: Encountered error for check {unique_id} while writing", file=sys.stderr)
         check_run_object.edit(
         completed_at=get_iso_time(),

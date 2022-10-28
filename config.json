@@ -9,6 +9,8 @@
   "dmm-save-path": "dmms/",
   "host-dmms": true,
   "banned-repos": [],
+  "threads-network": 7,
+  "threads-fileio": 20,
   "debug": false,
   "threaded": true,
   "port": 5000

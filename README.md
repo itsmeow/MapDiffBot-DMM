@@ -34,6 +34,10 @@ python -m MapDiffBot-DMM.diff old.dmm new.dmm diff.dmm
 
 `banned-repos`: List of repo paths that are not processed (format: "Owner/RepoName")
 
+`threads-network`: Threads dedicated to downloading maps (needs to be limited due to GitHub API usage)
+
+`threads-fileio`: Threads dedicated to performing diffs and writing files.
+
 ### Development Options
 
 `port`: Port to listen to webhook requests on.

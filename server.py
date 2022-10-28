@@ -161,7 +161,7 @@ async def do_request(data, owner, repo_name, full_name):
 
     downloads = []
 
-    with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
+    with concurrent.futures.ThreadPoolExecutor(max_workers=config["threads-network"]) as executor:
         download_tasks = []
         for file in maps_changed:
             b = executor.submit(get_file, f"https://api.github.com/repos/{full_name}/contents/{file.filename}?ref={before}", token)
@@ -184,7 +184,7 @@ async def do_request(data, owner, repo_name, full_name):
                 }
                 )
                 return
-    with concurrent.futures.ThreadPoolExecutor(max_workers=20) as executor:
+    with concurrent.futures.ThreadPoolExecutor(max_workers=config["threads-fileio"]) as executor:
         print(f"Parsing {unique_id}", file=sys.stderr)
         diff_tasks = []
         i = 0
@@ -192,7 +192,7 @@ async def do_request(data, owner, repo_name, full_name):
             file = maps_changed[i // 2]
             before_dmm = _parse(downloads[i])
             after_dmm = _parse(downloads[i + 1])
-            d = executor.submit(create_diff, before_dmm, after_dmm)
+            d = executor.submit(create_diff, before_dmm, after_dmm, file.filename)
             diff_tasks.append(d)
             i += 2
         diffs = []
@@ -214,8 +214,8 @@ async def do_request(data, owner, repo_name, full_name):
             return
         io_tasks = []
         for diff in diffs:
-            tiles_changed, diff_dmm, note, movables_added, movables_deleted, turfs_changed, areas_changed = diff
-            result_text += f"### {file.filename}\n\n"
+            tiles_changed, diff_dmm, note, movables_added, movables_deleted, turfs_changed, areas_changed, filename = diff
+            result_text += f"### {filename}\n\n"
             if not note is None:
                 result_text += f"{note}\n\n"
             if(diff_dmm == None):
@@ -224,7 +224,7 @@ async def do_request(data, owner, repo_name, full_name):
             result_text += f"{movables_added} movables added, {movables_deleted} movables deleted\n"
             result_text += f"{turfs_changed} turfs changed\n"
             result_text += f"{areas_changed} areas changed\n"
-            file_uuid = unique_id + "-" + re.sub(r'[^\w]', '-', file.filename)
+            file_uuid = unique_id + "-" + re.sub(r'[^\w]', '-', filename)
             # Generate a unique name hashed on all unique fields
             file_name_safe = hashlib.sha1(file_uuid.encode("utf-8")).hexdigest() + ".dmm"
             out_file_path = dmm_save_path + file_name_safe

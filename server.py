@@ -259,8 +259,11 @@ def get_dmm(filename):
 # --------
 
 async def get_file(url, token):
-    async with aiohttp.ClientSession(headers={"Accept": "application/vnd.github.3.raw", "Authorization": f"Bearer {token}"}) as session:
-        async with session.get(url) as resp:
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url, headers={"Accept": "application/vnd.github.3.raw", "Authorization": f"Bearer {token}"}) as resp:
+            if resp.status != 200:
+                print(f"error response {resp.status} for {url}", file=sys.stderr)
+                pass
             return await resp.text()
 
 def get_iso_time():

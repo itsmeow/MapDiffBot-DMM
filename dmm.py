@@ -35,7 +35,7 @@ class DMM:
     async def to_file(self, fname, *, tgm = True):
         self._presave_checks()
         with aiofiles.open(fname, 'w', newline='\n', encoding=ENCODING) as f:
-            (save_tgm if tgm else save_dmm)(self, f)
+            await (save_tgm if tgm else save_dmm)(self, f)
 
     def to_bytes(self, *, tgm = True):
         self._presave_checks()

@@ -175,7 +175,9 @@ def hook_receive():
             result_text += f"{movables_added} movables added, {movables_deleted} movables deleted\n"
             result_text += f"{turfs_changed} turfs changed\n"
             result_text += f"{areas_changed} areas changed\n"
-            file_name_safe = unique_id + ".dmm"
+            file_uuid = unique_id + "-" + re.sub(r'[^\w]', '-', file.filename)
+            # Generate a unique name hashed on all unique fields
+            file_name_safe = hashlib.sha1(file_uuid.encode("utf-8")).hexdigest() + ".dmm"
             out_file_path = dmm_save_path + file_name_safe
             result_text += f"Download: [diff]({host}{dmm_url}/{file_name_safe})\n"
             try:

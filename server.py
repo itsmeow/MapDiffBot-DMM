@@ -133,7 +133,7 @@ async def do_request(data, owner, repo_name, full_name):
 
     repo = git_connection.get_repo(full_name)
 
-    if "[mdb ignore]" in pull_request["title"].lower():
+    if "[mdb ignore]" in pull_request["title"].lower() and not "[mdb ignore]dmm" in pull_request["title"].lower():
         repo.create_check_run(
         name=name,
         head_sha=commit_head_sha,

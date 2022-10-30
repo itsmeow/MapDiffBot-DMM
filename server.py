@@ -189,9 +189,9 @@ async def do_request(data, owner, repo_name, full_name):
         print(f"Parsing {unique_id}", file=sys.stderr)
         diff_tasks = []
         for download in downloads:
-            before, after, filename = download
-            before_dmm = _parse(before)
-            after_dmm = _parse(after)
+            before_text, after_text, filename = download
+            before_dmm = _parse(before_text)
+            after_dmm = _parse(after_text)
             d = executor.submit(create_diff, before_dmm, after_dmm, filename)
             diff_tasks.append(d)
         diffs = []

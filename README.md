@@ -2,6 +2,8 @@
 
 MapDiffBot-DMM generates DMM files showing the changes in a map via GitHub's Checks API, in a convenient format with easily locatable changes.
 
+Features integration with [FastDMM2](https://fastdmm2.ss13.io/) for easy in-browser full diff viewing.
+
 ## Diffs
 
 ![MDB-DMM diff New marker - new contents - Old marker - old contents - End marker - TURF DIFF: old TO new - AREA DIFF: old TO new - new turf - new area](https://i.imgur.com/YBW6iq9.png)
@@ -27,6 +29,8 @@ python -m MapDiffBot-DMM.diff old.dmm new.dmm diff.dmm
 `webhook-url`: URL path to listen for webhook requests on (start with /)
 
 `webhook-secret`: Optional, webhook secret used to sign/verify requests are from GitHub, if you created one
+
+`fastdmm-host`: Host for FastDMM links, in case you want to use a fork.
 
 `host-dmms`: If this server should host the DMM files from the folder it saves to and serve them.
 

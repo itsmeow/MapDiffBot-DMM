@@ -74,6 +74,9 @@ if webhook_path.endswith("/"):
 if not webhook_path or len(webhook_path) == 0:
     print("Must specify a webhook path in config!", file=sys.stderr)
     exit(1)
+fastdmm_host = config["fastdmm-host"]
+if fastdmm_host.endswith("/"):
+    fastdmm_host[:len(fastdmm_host) - 1]
 
 # App
 # -----------
@@ -224,7 +227,10 @@ async def do_request(data, owner, repo_name, full_name):
             # Generate a unique name hashed on all unique fields
             file_name_safe = hashlib.sha1(file_uuid.encode("utf-8")).hexdigest() + ".dmm"
             out_file_path = dmm_save_path + file_name_safe
-            result_text += f"Download: [diff]({host}{dmm_url}/{file_name_safe})\n"
+            full_url = f"{host}{dmm_url}/{file_name_safe}"
+            result_text += f"Download: [diff]({full_url})\n"
+            if fastdmm_host and len(fastdmm_host) > 0:
+                result_text += f"FastDMM: [base repo]({fastdmm_host}?repo={full_name}&branch={before}&map={full_url}) - [head repo]({fastdmm_host}?repo={full_name}&branch={after}&map={full_url})\n"
             t = executor.submit(diff_dmm.to_file, out_file_path)
             io_tasks.append(t)
             #print(f"Generated diff: {out_file_path}", file=sys.stderr)

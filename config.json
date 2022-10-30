@@ -6,6 +6,7 @@
   "dmm-url": "/map-diff",
   "webhook-path": "/webhook",
   "webhook-secret": "",
+  "fastdmm-host": "https://fastdmm2.ss13.io",
   "dmm-save-path": "dmms/",
   "host-dmms": true,
   "banned-repos": [],

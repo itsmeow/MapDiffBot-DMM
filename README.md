@@ -4,6 +4,8 @@ MapDiffBot-DMM generates DMM files showing the changes in a map via GitHub's Che
 
 Features integration with [FastDMM2](https://fastdmm2.ss13.io/) for easy in-browser full diff viewing.
 
+## [Install to Repository](https://github.com/apps/mapdiffbot-dmm)
+
 ## Diffs
 
 ![MDB-DMM diff New marker - new contents - Old marker - old contents - End marker - TURF DIFF: old TO new - AREA DIFF: old TO new - new turf - new area](https://i.imgur.com/YBW6iq9.png)

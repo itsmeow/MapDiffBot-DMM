@@ -20,31 +20,21 @@ python -m MapDiffBot-DMM.diff old.dmm new.dmm diff.dmm
 
 ## Configuration
 
-`app-id`: The App ID of your Github app. Listed under "About"
-
-`app-key-path`: This is the path to the file containing the private key for your app. Generate one and then put it in the repo folder.
-
-`host`: Base URL to direct map downloads to (if `host-dmms` is enabled, it should point to this server).
-
-`dmm-url`: URL path to direct map downloads to (appended to host, starts with /). Also used to listen for requests if `host-dmms` is enabled.
-
-`webhook-url`: URL path to listen for webhook requests on (start with /)
-
-`webhook-secret`: Optional, webhook secret used to sign/verify requests are from GitHub, if you created one
-
-`fastdmm-host`: Host for FastDMM links, in case you want to use a fork.
-
-`host-dmms`: If this server should host the DMM files from the folder it saves to and serve them.
-
-`dmm-save-path`: Filesystem location to save DMM files to.
-
-`banned-repos`: List of repo paths that are not processed (format: "Owner/RepoName")
-
-`threads-network`: Threads dedicated to downloading maps (needs to be limited due to GitHub API usage)
-
-`threads-fileio`: Threads dedicated to performing diffs and writing files.
-
-`use-gzip`: Enables writing DMMs to gzipped files. Webservers can be configured to serve these directly, saving local storage and bandwith. Note that the builtin file server does not support this option.
+| Name              | Description                                                                                                                                                                                     | Default                      |
+| ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------- |
+| `app-id`          | The App ID of your Github app. Listed under "About"                                                                                                                                             | N/A                          |
+| `app-key-path`    | This is the path to the file containing the private key for your app. Generate one and then put it in the repo folder.                                                                          | `"private_key.pem"`          |
+| `host`            | Base URL to direct map downloads to (if `host-dmms` is enabled, it should point to this server).                                                                                                | N/A                          |
+| `dmm-url`         | URL path to direct map downloads to (appended to host, starts with /). Also used to listen for requests if `host-dmms` is enabled.                                                              | `"/map-diff"`                |
+| `webhook-path`    | URL path to listen for webhook requests on (start with /)                                                                                                                                       | `"/webhook"`                 |
+| `webhook-secret`  | Optional, webhook secret used to sign/verify requests are from GitHub, if you created one                                                                                                       | N/A                          |
+| `fastdmm-host`    | Host for FastDMM links, in case you want to use a fork.                                                                                                                                         | `"https://fastdmm2.ss13.io"` |
+| `host-dmms`       | If this server should host the DMM files from the folder it saves to and serve them.                                                                                                            | `"dmms/"`                    |
+| `dmm-save-path`   | Filesystem location to save DMM files to.                                                                                                                                                       | `true`                       |
+| `banned-repos`    | List of repo paths that are not processed (format: "Owner/RepoName")                                                                                                                            | `[]`                         |
+| `threads-network` | Threads dedicated to downloading maps (needs to be limited due to GitHub API usage)                                                                                                             | `7`                          |
+| `threads-fileio`  | Threads dedicated to performing diffs and writing files.                                                                                                                                        | `20`                         |
+| `use-gzip`        | Enables writing DMMs to gzipped files. Webservers can be configured to serve these directly, saving local storage and bandwith. Note that the builtin file server does not support this option. | `false`                      |
 
 ### Development Options
 
@@ -159,13 +149,13 @@ sudo a2ensite mdb
 
 ##### Once done with deployment
 
-```
+```sh
 sudo systemctl restart apache2
 ```
 
 ##### Check for errors
 
-```
+```sh
 sudo tail /var/log/apache2/error.log
 sudo tail /var/log/apache2/mdb_error.log
 ```
@@ -174,7 +164,7 @@ sudo tail /var/log/apache2/mdb_error.log
 
 ##### Directory Permissions
 
-```
+```sh
 sudo chmod 750 /srv/mdb
 sudo chown wsgi-mdb:wsgi-mdb /srv/mdb
 ```
@@ -204,7 +194,7 @@ from mapdiffbotdmm.server import app as application
 
 ##### /srv/mdb/mapdiffbotdmm/config.json
 
-```
+```json
 {
   "name": "MapDiffBot-DMM",
   "app-id": "Your GH application ID here",
@@ -219,6 +209,7 @@ from mapdiffbotdmm.server import app as application
   "banned-repos": [],
   "threads-network": 7,
   "threads-fileio": 20,
+  "use-gzip": false,
   "debug": false,
   "threaded": true,
   "port": 5000
@@ -229,11 +220,42 @@ from mapdiffbotdmm.server import app as application
 
 ##### Directory Permissions
 
-```
+```sh
 sudo chmod 755 /var/www/dmms
 sudo chown wsgi-mdb:wsgi-mdb /var/www/dmms
 ```
 
 ```
 rwxr-xr-x wsgi-mdb wsgi-mdb
+```
+
+#### To enable filesystem compression
+
+Enable `use-gzip` in `config.json`.
+
+Then, in `mdb.conf`, add the following (use existing blocks, just add the contents):
+
+```xml
+<Directory /var/www/dmms>
+        AddEncoding gzip gz
+        ForceType text/plain
+        Options +Multiviews
+        SetEnv force-no-vary
+        Header set Cache-Control "private"
+</Directory>
+```
+
+Change the FilesMatch block to this:
+
+```xml
+<FilesMatch "\.(dmm|dmm\.gz)$">
+        Header set Content-Disposition attachment
+</FilesMatch>
+```
+
+Compress your existing DMM files:
+
+```sh
+find /var/www/dmms/ -type f \( -name '*.dmm'  \)
+     -exec gzip {} \;
 ```

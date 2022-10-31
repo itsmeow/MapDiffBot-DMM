@@ -144,8 +144,8 @@ async def do_request(data, owner, repo_name, full_name):
         completed_at=get_iso_time(),
         conclusion="skipped",
         output={
-            "title": name,
-            "summary": "pull request ignored"
+            "title": "Ignored",
+            "summary": "pull request ignored due to [MDB IGNORE] in title. Use [MDB IGNORE]DMM to allow MDB-DMM, but not other MDBs."
         })
         return
 
@@ -180,11 +180,12 @@ async def do_request(data, owner, repo_name, full_name):
                 completed_at=get_iso_time(),
                 conclusion="skipped",
                 output={
-                    "title": name,
+                    "title": "Internal error",
                     "summary": f"error encountered while performing data download"
                 }
                 )
                 return
+    result_entries = []
     with concurrent.futures.ThreadPoolExecutor(max_workers=config["threads-fileio"]) as executor:
         print(f"Parsing {unique_id}", file=sys.stderr)
         diff_tasks = []
@@ -206,7 +207,7 @@ async def do_request(data, owner, repo_name, full_name):
             completed_at=get_iso_time(),
             conclusion="skipped",
             output={
-                "title": name,
+                "title": "Internal error",
                 "summary": f"error encountered while performing diff"
             }
             )
@@ -214,26 +215,27 @@ async def do_request(data, owner, repo_name, full_name):
         io_tasks = []
         for diff in diffs:
             tiles_changed, diff_dmm, note, movables_added, movables_deleted, turfs_changed, areas_changed, filename = diff
-            result_text += f"### {filename}\n\n"
+            result_entry = f"### {filename}\n\n"
             if not note is None:
-                result_text += f"{note}\n\n"
+                result_entry += f"{note}\n\n"
             if(diff_dmm == None):
                 continue
-            result_text += f"{tiles_changed} tiles changed\n"
-            result_text += f"{movables_added} movables added, {movables_deleted} movables deleted\n"
-            result_text += f"{turfs_changed} turfs changed\n"
-            result_text += f"{areas_changed} areas changed\n"
+            result_entry += f"{tiles_changed} tiles changed\n"
+            result_entry += f"{movables_added} movables added, {movables_deleted} movables deleted\n"
+            result_entry += f"{turfs_changed} turfs changed\n"
+            result_entry += f"{areas_changed} areas changed\n"
             file_uuid = unique_id + "-" + re.sub(r'[^\w]', '-', filename)
             # Generate a unique name hashed on all unique fields
             file_name_safe = hashlib.sha1(file_uuid.encode("utf-8")).hexdigest() + ".dmm"
             out_file_path = dmm_save_path + file_name_safe
             full_url = f"{host}{dmm_url}/{file_name_safe}"
-            result_text += f"Download: [diff]({full_url})\n"
+            result_entry += f"Download: [diff]({full_url})\n"
             if fastdmm_host and len(fastdmm_host) > 0:
-                result_text += f"FastDMM: [base repo]({fastdmm_host}?repo={full_name}&branch={before}&map={full_url}) - [head repo]({fastdmm_host}?repo={full_name}&branch={after}&map={full_url})\n"
+                result_entry += f"FastDMM: [base repo]({fastdmm_host}?repo={full_name}&branch={before}&map={full_url}) - [head repo]({fastdmm_host}?repo={full_name}&branch={after}&map={full_url})\n"
             t = executor.submit(diff_dmm.to_file, out_file_path, do_gzip=config["use-gzip"])
             io_tasks.append(t)
             #print(f"Generated diff: {out_file_path}", file=sys.stderr)
+            result_entries.append((result_entry, tiles_changed))
         try:
             print(f"Starting writes", file=sys.stderr)
             for future in concurrent.futures.as_completed(io_tasks):
@@ -246,18 +248,22 @@ async def do_request(data, owner, repo_name, full_name):
             completed_at=get_iso_time(),
             conclusion="skipped",
             output={
-                "title": name,
+                "title": "Internal error",
                 "summary": f"error encountered while writing"
             }
             )
             return
 
+    # Sort by tiles changed
+    for result_entry in sorted(result_entries, key=lambda entry: entry[1]):
+        result_text += result_entry[0]
+
     check_run_object.edit(
     completed_at=get_iso_time(),
     conclusion="success" if len(maps_changed) > 0 else "skipped",
     output={
-        "title": name,
-        "summary": f"{len(maps_changed)} maps changed",
+        "title": f"{len(maps_changed)} map{'s' if len(maps_changed) != 1 else ''} changed" if len(maps_changed) > 0 else "No maps changed",
+        "summary": "",
         "text": result_text,
     }
     )

@@ -35,7 +35,7 @@ class DMM:
     def to_file(self, fname, *, tgm = True, do_gzip = False):
         self._presave_checks()
         if do_gzip:
-            with gzip.GzipFile(fname + ".gz", 'w', newline='\n', encoding=ENCODING) as f:
+            with gzip.open(fname + ".gz", 'w', newline='\n', encoding=ENCODING) as f:
                 (save_tgm if tgm else save_dmm)(self, f)
         else:
             with open(fname, 'w', newline='\n', encoding=ENCODING) as f:

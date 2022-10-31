@@ -255,7 +255,7 @@ async def do_request(data, owner, repo_name, full_name):
             return
 
     # Sort by tiles changed
-    for result_entry in sorted(result_entries, key=lambda entry: entry[1]):
+    for result_entry in sorted(result_entries, key=lambda entry: entry[1], reverse=True):
         result_text += result_entry[0]
 
     check_run_object.edit(

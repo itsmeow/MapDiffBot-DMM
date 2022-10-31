@@ -44,6 +44,8 @@ python -m MapDiffBot-DMM.diff old.dmm new.dmm diff.dmm
 
 `threads-fileio`: Threads dedicated to performing diffs and writing files.
 
+`use-gzip`: Enables writing DMMs to gzipped files. Webservers can be configured to serve these directly, saving local storage and bandwith. Note that the builtin file server does not support this option.
+
 ### Development Options
 
 `port`: Port to listen to webhook requests on.

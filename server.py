@@ -231,7 +231,7 @@ async def do_request(data, owner, repo_name, full_name):
             result_text += f"Download: [diff]({full_url})\n"
             if fastdmm_host and len(fastdmm_host) > 0:
                 result_text += f"FastDMM: [base repo]({fastdmm_host}?repo={full_name}&branch={before}&map={full_url}) - [head repo]({fastdmm_host}?repo={full_name}&branch={after}&map={full_url})\n"
-            t = executor.submit(diff_dmm.to_file, out_file_path)
+            t = executor.submit(diff_dmm.to_file, out_file_path, do_gzip=config["use-gzip"])
             io_tasks.append(t)
             #print(f"Generated diff: {out_file_path}", file=sys.stderr)
         try:
@@ -266,6 +266,8 @@ async def do_request(data, owner, repo_name, full_name):
 def get_dmm(filename):
     if not config["host-dmms"]:
         return "DMM hosting disabled, if you're seeing this, the server is probably misconfigured."
+    elif config["use-gzip"]:
+        print(f"WARNING: Server is configured to use gzip, but the builtin DMM fileserver does not support it! Disable use-gzip or use an external webserver.", file=sys.stderr)
     return send_from_directory(directory=dmm_save_path, path=filename, as_attachment=True)
 
 # Helpers

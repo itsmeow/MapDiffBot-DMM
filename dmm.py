@@ -6,6 +6,7 @@ import io
 import bidict
 import random
 from collections import namedtuple
+import gzip
 
 TGM_HEADER = "//MAP CONVERTED BY dmm2tgm.py THIS HEADER COMMENT PREVENTS RECONVERSION, DO NOT REMOVE"
 ENCODING = 'utf-8'
@@ -31,10 +32,14 @@ class DMM:
     def from_bytes(bytes):
         return _parse(bytes.decode(ENCODING))
 
-    def to_file(self, fname, *, tgm = True):
+    def to_file(self, fname, *, tgm = True, do_gzip = False):
         self._presave_checks()
-        with open(fname, 'w', newline='\n', encoding=ENCODING) as f:
-            (save_tgm if tgm else save_dmm)(self, f)
+        if do_gzip:
+            with gzip.GGzipFile(fname + ".gz", 'w', newline='\n', encoding=ENCODING) as f:
+                (save_tgm if tgm else save_dmm)(self, f)
+        else:
+            with open(fname, 'w', newline='\n', encoding=ENCODING) as f:
+                (save_tgm if tgm else save_dmm)(self, f)
 
     def to_bytes(self, *, tgm = True):
         self._presave_checks()

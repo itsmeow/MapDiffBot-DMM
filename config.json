@@ -12,6 +12,7 @@
   "banned-repos": [],
   "threads-network": 7,
   "threads-fileio": 20,
+  "use-gzip": false,
   "debug": false,
   "threaded": true,
   "port": 5000

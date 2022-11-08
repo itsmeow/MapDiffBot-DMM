@@ -220,10 +220,12 @@ async def do_request(data, owner, repo_name, full_name):
                 result_entry += f"{note}\n\n"
             if(diff_dmm == None):
                 continue
-            result_entry += f"{tiles_changed} tiles changed\n"
-            result_entry += f"{movables_added} movables added, {movables_deleted} movables deleted\n"
-            result_entry += f"{turfs_changed} turfs changed\n"
-            result_entry += f"{areas_changed} areas changed\n"
+            # Get around GitHub's character limit
+            if len(diffs) <= 50:
+                result_entry += f"{tiles_changed} tiles changed\n"
+                result_entry += f"{movables_added} movables added, {movables_deleted} movables deleted\n"
+                result_entry += f"{turfs_changed} turfs changed\n"
+                result_entry += f"{areas_changed} areas changed\n"
             file_uuid = unique_id + "-" + re.sub(r'[^\w]', '-', filename)
             # Generate a unique name hashed on all unique fields
             file_name_safe = hashlib.sha1(file_uuid.encode("utf-8")).hexdigest() + ".dmm"

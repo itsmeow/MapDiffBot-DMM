@@ -221,7 +221,7 @@ async def do_request(data, owner, repo_name, full_name):
             if(diff_dmm == None):
                 continue
             # Get around GitHub's character limit
-            if len(diffs) <= 50:
+            if len(maps_changed) <= 100:
                 result_entry += f"{tiles_changed} tiles changed\n"
                 result_entry += f"{movables_added} movables added, {movables_deleted} movables deleted\n"
                 result_entry += f"{turfs_changed} turfs changed\n"
@@ -233,7 +233,10 @@ async def do_request(data, owner, repo_name, full_name):
             full_url = f"{host}{dmm_url}/{file_name_safe}"
             result_entry += f"Download: [diff]({full_url})\n"
             if fastdmm_host and len(fastdmm_host) > 0:
-                result_entry += f"FastDMM: [base repo]({fastdmm_host}?repo={full_name}&branch={before}&map={full_url}) - [head repo]({fastdmm_host}?repo={full_name}&branch={after}&map={full_url})\n"
+                result_entry += f"FastDMM: "
+                if len(maps_changed) <= 50:
+                    result_entry += f"[base repo]({fastdmm_host}?repo={full_name}&branch={before}&map={full_url}) - "
+                result_entry += f"[head repo]({fastdmm_host}?repo={full_name}&branch={after}&map={full_url})\n"
             t = executor.submit(diff_dmm.to_file, out_file_path, do_gzip=config["use-gzip"])
             io_tasks.append(t)
             #print(f"Generated diff: {out_file_path}", file=sys.stderr)

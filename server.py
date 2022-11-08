@@ -181,7 +181,7 @@ async def do_request(data, owner, repo_name, full_name):
                 conclusion="skipped",
                 output={
                     "title": "Internal error",
-                    "summary": f"error encountered while performing data download"
+                    "summary": "error encountered while performing data download"
                 }
                 )
                 return
@@ -208,7 +208,7 @@ async def do_request(data, owner, repo_name, full_name):
             conclusion="skipped",
             output={
                 "title": "Internal error",
-                "summary": f"error encountered while performing diff"
+                "summary": "error encountered while performing diff"
             }
             )
             return
@@ -254,7 +254,7 @@ async def do_request(data, owner, repo_name, full_name):
             conclusion="skipped",
             output={
                 "title": "Internal error",
-                "summary": f"error encountered while writing"
+                "summary": "error encountered while writing"
             }
             )
             return
@@ -263,15 +263,28 @@ async def do_request(data, owner, repo_name, full_name):
     for result_entry in sorted(result_entries, key=lambda entry: entry[1], reverse=True):
         result_text += result_entry[0]
 
-    check_run_object.edit(
-    completed_at=get_iso_time(),
-    conclusion="success" if len(maps_changed) > 0 else "skipped",
-    output={
-        "title": f"{len(maps_changed)} map{'s' if len(maps_changed) != 1 else ''} changed" if len(maps_changed) > 0 else "No maps changed",
-        "summary": "",
-        "text": result_text,
-    }
-    )
+    try:
+        check_run_object.edit(
+        completed_at=get_iso_time(),
+        conclusion="success" if len(maps_changed) > 0 else "skipped",
+        output={
+            "title": f"{len(maps_changed)} map{'s' if len(maps_changed) != 1 else ''} changed" if len(maps_changed) > 0 else "No maps changed",
+            "summary": "",
+            "text": result_text,
+        }
+        )
+    except Exception as e:
+        print(e)
+        print(f"WARNING: Error while editing check run {unique_id}", file=sys.stderr)
+        check_run_object.edit(
+        completed_at=get_iso_time(),
+        conclusion="skipped",
+        output={
+            "title": "Internal error",
+            "summary": "error encountered while updating check run status. The diff may be too large.",
+        }
+        )
+
 
 @app.route(dmm_url + "/<filename>", methods=["GET"])
 def get_dmm(filename):

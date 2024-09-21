@@ -134,6 +134,7 @@ This assumes you already have a working SSL configuration, otherwise, just use H
         <Directory /var/www/dmms>
                 Header set Access-Control-Allow-Origin "*"
                 Require all granted
+                Options -Indexes
         </Directory>
         ErrorLog ${APACHE_LOG_DIR}/mdb_error.log
         LogLevel info
@@ -239,7 +240,7 @@ Then, in `mdb.conf`, add the following (use existing blocks, just add the conten
 <Directory /var/www/dmms>
         AddEncoding gzip gz
         ForceType text/plain
-        Options +Multiviews
+        Options +Multiviews -Indexes
         SetEnv force-no-vary
         Header set Cache-Control "private"
 </Directory>

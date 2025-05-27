@@ -10,6 +10,7 @@
   "dmm-save-path": "dmms/",
   "host-dmms": true,
   "banned-repos": [],
+  "banned-users": [],
   "threads-network": 7,
   "threads-fileio": 20,
   "use-gzip": false,

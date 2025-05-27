@@ -116,6 +116,9 @@ async def hook_receive():
     if full_name in config["banned-repos"]:
         print(f"Request from banned repository: {full_name}", file=sys.stderr)
         return "banned repository", 403
+    if owner in config["banned-users"]:
+        print(f"Request from banned user: {full_name}", file=sys.stderr)
+        return "banned user", 403
 
     asyncio.get_running_loop().create_task(do_request(data, owner, repo_name, full_name))
     return "ok"
